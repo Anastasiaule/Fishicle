@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Emitter.cs" />
+    <Compile Include="EnemyFish.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -4,64 +4,67 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Fishicle
 {
     public class Particle
     {
-        public float X, Y;
-        public float SpeedX, SpeedY;
-        public int Radius;
+        public PointF Position;
+        public PointF Velocity;
+        public float Life;
         public Color Color;
-        public bool Alive = true;
+        public float Size;
 
-        public Particle(float x, float y, int radius, Color color)
+        public Particle(PointF position, PointF velocity, float life, Color color, float size)
         {
-            X = x; Y = y; Radius = radius; Color = color;
-            // random drift for food
-            var rnd = new Random();
-            SpeedX = (float)(rnd.NextDouble() * 1 - 0.5);
-            SpeedY = (float)(rnd.NextDouble() * 1 - 0.5);
+            Position = position;
+            Velocity = velocity;
+            Life = life;
+            Color = color;
+            Size = size;
         }
 
         public virtual void Update()
         {
-            X += SpeedX;
-            Y += SpeedY;
+            Position = new PointF(Position.X + Velocity.X, Position.Y + Velocity.Y);
+            Life -= 1;
         }
 
         public virtual void Draw(Graphics g)
         {
-            using (var brush = new SolidBrush(Color))
-                g.FillEllipse(brush, X - Radius, Y - Radius, Radius * 2, Radius * 2);
-        }
+            int alpha = (int)(255 * (Life / 100f));
+            alpha = Math.Max(0, Math.Min(255, alpha));
 
-        public float DistanceTo(Particle other)
-        {
-            float dx = X - other.X, dy = Y - other.Y;
-            return (float)Math.Sqrt(dx * dx + dy * dy);
+            using (Brush b = new SolidBrush(Color.FromArgb(alpha, Color)))
+            {
+                g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
+            }
         }
     }
-    public class ParticleFish : Particle
+
+    public class FoodParticle : Particle
     {
-        public PointF BaseOffset;
-        public PointF GlobalCenter;
-        public float Scale = 1f;
-        public float Speed = 0.1f;
+        private static Random rand = new Random();
 
-        public ParticleFish(PointF baseOffset) : base(0, 0, 2, Color.Orange)
+        public FoodParticle(PointF position)
+            : base(
+                position,
+                new PointF((float)(rand.NextDouble() * 2 - 1), (float)(rand.NextDouble() * 2 - 1)),
+                100,
+                Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256)),
+                5f
+            )
         {
-            BaseOffset = baseOffset;
-        }
-
-        public override void Update()
-        {
-            // target for this particle
-            float tx = GlobalCenter.X + BaseOffset.X * Scale;
-            float ty = GlobalCenter.Y + BaseOffset.Y * Scale;
-            float dx = tx - X, dy = ty - Y;
-            X += dx * Speed;
-            Y += dy * Speed;
         }
     }
+
+    public class FishParticle : Particle
+    {
+        public FishParticle(PointF position, PointF velocity, Color color, float size)
+            : base(position, velocity, 100, color, size)
+        {
+        }
+    }
+
 }

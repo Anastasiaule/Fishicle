@@ -7,90 +7,86 @@ using System.Threading.Tasks;
 
 namespace Fishicle
 {
-    class Emitter
+    public class Emitter
     {
-        public List<ParticleFish> FishParticles = new List<ParticleFish>();
-        public float Scale = 1f;
-        public PointF Center;
-        public Color FishColor = Color.Orange;
-        private List<PointF> shapePoints;
+        public List<Particle> particles = new List<Particle>(); // еда
+        public List<List<FishParticle>> enemies = new List<List<FishParticle>>(); // враги
+        public PointF EmitPosition;
         private Random rand = new Random();
 
-        public Emitter(PointF center)
+        public Emitter(PointF pos)
         {
-            Center = center;
-            GenerateShape();
-            InitializeParticles();
+            EmitPosition = pos;
         }
 
-        // define base fish shape
-        private void GenerateShape()
+        public void Update()
         {
-            shapePoints = new List<PointF>();
-            // body
-            for (float x = -10; x <= 10; x += 0.5f)
+            // Обновляем еду
+            foreach (var p in particles.ToArray())
             {
-                float y = (float)(Math.Sin(x / 2) * 5);
-                shapePoints.Add(new PointF(x, y));
-            }
-            // tail
-            shapePoints.Add(new PointF(-11, 0));
-            shapePoints.Add(new PointF(-12, -2));
-            shapePoints.Add(new PointF(-12, 2));
-        }
-
-        private void InitializeParticles()
-        {
-            FishParticles.Clear();
-            foreach (var pt in shapePoints)
-            {
-                var fish = new ParticleFish(pt)
-                {
-                    Scale = Scale,
-                    GlobalCenter = Center,
-                    Radius = 4,
-                    Color = FishColor,
-                    Speed = 0.1f
-                };
-                // random offset initial
-                fish.X = Center.X + pt.X * Scale + rand.Next(-20, 20);
-                fish.Y = Center.Y + pt.Y * Scale + rand.Next(-20, 20);
-                FishParticles.Add(fish);
-            }
-        }
-
-        public void Update(bool followMouse, PointF mousePos)
-        {
-            // move center if player
-            if (followMouse) Center = mousePos;
-
-            // animate scale (growth) applied in ParticleFish
-            foreach (var p in FishParticles)
-            {
-                p.Scale = Scale;
-                p.GlobalCenter = Center;
                 p.Update();
+                if (p.Life <= 0)
+                    particles.Remove(p);
+            }
+
+            // Обновляем врагов
+            foreach (var enemy in enemies.ToList())
+            {
+                foreach (var part in enemy)
+                    part.Update();
+
+                // Удаление, если все частицы врага вышли за экран
+                bool outOfScreen = enemy.All(p =>
+                    p.Position.X < -50 || p.Position.X > 850 ||
+                    p.Position.Y < -50 || p.Position.Y > 650);
+
+                if (outOfScreen)
+                    enemies.Remove(enemy);
+            }
+
+            // Регенерация еды
+            while (particles.Count < 100)
+            {
+                particles.Add(new FoodParticle(new PointF(rand.Next(800), rand.Next(600))));
+            }
+
+            // Регенерация врагов
+            while (enemies.Count < 10)
+            {
+                float y = rand.Next(100, 500);
+                float size = rand.Next(30, 80);
+                bool fromLeft = rand.Next(2) == 0;
+                float vx = fromLeft ? rand.Next(1, 3) : -rand.Next(1, 3);
+                float vy = rand.Next(-1, 2);
+
+                List<FishParticle> enemyFish = new List<FishParticle>();
+                for (int i = 0; i < 10; i++)
+                {
+                    var offset = new PointF(i * 5, (float)Math.Sin(i * 0.5f) * 5);
+                    var posX = fromLeft ? -size + offset.X : 800 + size - offset.X;
+                    var pos = new PointF(posX, y + offset.Y);
+
+                    enemyFish.Add(new FishParticle(
+                        pos,
+                        new PointF(vx, vy),
+                        Color.Red,
+                        size / 10f
+                    ));
+                }
+
+                enemies.Add(enemyFish);
             }
         }
 
         public void Draw(Graphics g)
         {
-            foreach (var p in FishParticles)
+            foreach (var p in particles)
                 p.Draw(g);
-        }
 
-        // approximate fish size by bounding circle
-        public float GetSize()
-        {
-            // calculate maximum distance of shape points from center
-            float maxDist = 0;
-            foreach (var pt in shapePoints)
-            {
-                float dist = (float)Math.Sqrt(pt.X * pt.X + pt.Y * pt.Y) * Scale;
-                if (dist > maxDist)
-                    maxDist = dist;
-            }
-            return maxDist;
+            foreach (var enemy in enemies)
+                foreach (var part in enemy)
+                    part.Draw(g);
         }
     }
+
 }

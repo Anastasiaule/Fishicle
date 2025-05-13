@@ -12,109 +12,100 @@ namespace Fishicle
 {
     public partial class Form1 : Form
     {
-        private Timer timer;
-        private Emitter player;
-        private List<Particle> food = new List<Particle>();
-        private List<Emitter> enemies = new List<Emitter>();
-        private Random rand = new Random();
+        Timer timer = new Timer();
+        Emitter emitter;
+        PointF playerPos = new PointF(400, 300);
+        float playerSize = 20f;
+        Color playerColor = Color.Blue;
+        int score = 0;
+        bool gameOver = false;
 
         public Form1()
         {
             InitializeComponent();
             this.DoubleBuffered = true;
-            this.Width = 800; this.Height = 600;
+            this.Width = 800;
+            this.Height = 600;
 
-            player = new Emitter(new PointF(400, 300));
+            emitter = new Emitter(playerPos);
 
-            // spawn initial food
-            for (int i = 0; i < 50; i++) SpawnFood();
-            // spawn enemies
-            for (int i = 0; i < 5; i++) enemies.Add(new Emitter(RandomPoint()));
-
-            timer = new Timer { Interval = 16 };
+            timer.Interval = 20;
             timer.Tick += Timer_Tick;
             timer.Start();
+
+            this.MouseMove += Form1_MouseMove;
+            this.Paint += Form1_Paint;
         }
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            PointF mouse = PointToClient(MousePosition);
-            player.Update(true, mouse);
+            if (gameOver) return;
 
-            // update enemies
-            foreach (var em in enemies) em.Update(false, PointF.Empty);
+            emitter.Update();
+            playerPos = this.PointToClient(Cursor.Position);
 
             // check food collisions
-            for (int i = food.Count - 1; i >= 0; i--)
+            foreach (var f in emitter.particles.ToList())
             {
-                var f = food[i];
-                if (player.FishParticles.Any(p => p.DistanceTo(f) < p.Radius + f.Radius))
+                float dx = f.Position.X - playerPos.X;
+                float dy = f.Position.Y - playerPos.Y;
+                float dist = (float)Math.Sqrt(dx * dx + dy * dy);
+                if (dist < (playerSize + f.Size) / 2)
                 {
-                    food.RemoveAt(i);
-                    player.Scale += 0.02f;
-                    player.FishColor = f.Color;
-                    player.FishParticles.ForEach(p => p.Color = f.Color);
-                    SpawnFood();
+                    emitter.particles.Remove(f);
+                    playerSize += 0.5f;
+                    playerColor = f.Color;
+                    score++;
                 }
             }
 
-            // check fish collisions
-            float playerSize = player.GetSize();
-            for (int i = enemies.Count - 1; i >= 0; i--)
+            // check enemy collisions
+            foreach (var eFish in emitter.enemies.ToList())
             {
-                var en = enemies[i];
-                float dist = Distance(player.Center, en.Center);
-                if (dist < playerSize)
+                float dx = eFish.Position.X - playerPos.X;
+                float dy = eFish.Position.Y - playerPos.Y;
+                float dist = (float)Math.Sqrt(dx * dx + dy * dy);
+                if (dist < (playerSize + eFish.Size) / 2)
                 {
-                    // eat enemy
-                    enemies.RemoveAt(i);
-                    player.Scale += 0.1f;
-                    enemies.Add(new Emitter(RandomPoint()));
-                }
-                else if (dist < en.GetSize())
-                {
-                    // player eaten
-                    timer.Stop();
-                    MessageBox.Show("Game Over");
-                    Application.Exit();
+                    if (playerSize > eFish.Size)
+                    {
+                        emitter.enemies.Remove(eFish);
+                        playerSize += 1.0f;
+                        score += 10;
+                    }
+                    else
+                    {
+                        gameOver = true;
+                        timer.Stop();
+                        MessageBox.Show("Game Over!");
+                    }
                 }
             }
 
-            Invalidate();
+            this.Invalidate();
         }
 
-        private void SpawnFood()
+        private void Form1_MouseMove(object sender, MouseEventArgs e)
         {
-            float x = rand.Next(50, Width - 50);
-            float y = rand.Next(50, Height - 50);
-            int r = 4;
-            var color = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-            var f = new Particle(x, y, r, color);
-            food.Add(f);
+            playerPos = e.Location;
         }
 
-        private PointF RandomPoint()
+        private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            return new PointF(rand.Next(100, Width - 100), rand.Next(100, Height - 100));
-        }
+            emitter.Draw(e.Graphics);
 
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
-            var g = e.Graphics;
-            // draw food
-            foreach (var f in food) f.Draw(g);
-            // draw enemies
-            foreach (var en in enemies) en.Draw(g);
-            // draw player
-            player.Draw(g);
-        }
+            if (!gameOver)
+            {
+                using (Brush b = new SolidBrush(playerColor))
+                {
+                    e.Graphics.FillEllipse(b, playerPos.X - playerSize / 2, playerPos.Y - playerSize / 2, playerSize, playerSize);
+                }
+            }
 
-        private float Distance(PointF a, PointF b)
-        {
-            float dx = a.X - b.X, dy = a.Y - b.Y;
-            return (float)Math.Sqrt(dx * dx + dy * dy);
+            using (Brush b = new SolidBrush(Color.Black))
+            {
+                e.Graphics.DrawString("Score: " + score, this.Font, b, 10, 10);
+            }
         }
     }
-
 }
