@@ -40,25 +40,72 @@ namespace Fishicle
         }
     }
 
-    public class FoodParticle : Particle
+    public class FoodParticle
     {
-        public FoodParticle(PointF position, Color color, float size)
-            : base(position, new PointF(0, 0), color, size, 99999) { }
-    }
+        public PointF Position;
+        public PointF Velocity;
+        public Color Color;
+        public float Size;
 
-    public class FishParticle : Particle
-    {
-        public FishParticle(PointF position, PointF velocity, Color color, float size)
-            : base(position, velocity, color, size, 99999) { }
-
-        public override void Update()
+        public FoodParticle(PointF position, PointF velocity, Color color, float size)
         {
-            base.Update();
+            Position = position;
+            Velocity = velocity;
+            Color = color;
+            Size = size;
         }
 
-        public override void Draw(Graphics g)
+        public void Update()
         {
-            using (Brush b = new SolidBrush(Color.FromArgb((int)Math.Min(255, (Life / 100f) * 255), Color)))
+            Position = new PointF(Position.X + Velocity.X, Position.Y + Velocity.Y);
+        }
+
+        public void Draw(Graphics g)
+        {
+            using (Brush b = new SolidBrush(Color))
+            {
+                g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
+            }
+        }
+    }
+
+
+public class FishParticle 
+    {
+        public PointF Position;
+        public PointF Velocity;
+        public Color Color;
+        public float Size;
+        public PointF RelativePosition;
+        public float Angle;
+
+        public object Offset { get; internal set; }
+
+        public FishParticle(PointF position, PointF velocity, Color color, float size, PointF relative = default)
+        {
+            Position = position;
+            Velocity = velocity;
+            Color = color;
+            Size = size;
+            RelativePosition = relative;
+        }
+
+        public void UpdatePosition(PointF basePos, float angle)
+        {
+            Angle = angle;
+
+            float cos = (float)Math.Cos(angle);
+            float sin = (float)Math.Sin(angle);
+
+            Position = new PointF(
+                basePos.X + RelativePosition.X * cos - RelativePosition.Y * sin,
+                basePos.Y + RelativePosition.X * sin + RelativePosition.Y * cos
+            );
+        }
+
+        public void Draw(Graphics g)
+        {
+            using (Brush b = new SolidBrush(Color))
             {
                 g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
             }

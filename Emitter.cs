@@ -9,8 +9,8 @@ namespace Fishicle
 {
     public class Emitter
     {
-        public List<Particle> particles = new List<Particle>(); // еда
-        public List<List<FishParticle>> enemies = new List<List<FishParticle>>(); // враги
+        public List<FoodParticle> particles = new List<FoodParticle>();
+        public List<Fish> enemies = new List<Fish>();
         public PointF EmitPosition;
         private Random rand = new Random();
 
@@ -21,73 +21,50 @@ namespace Fishicle
 
         public void Update()
         {
-            // Обновляем еду
-            foreach (var p in particles.ToArray())
-            {
+            foreach (var p in particles)
                 p.Update();
-                if (p.Life <= 0)
-                    particles.Remove(p);
-            }
 
-            // Обновляем врагов
-            foreach (var enemy in enemies.ToList())
+            particles.RemoveAll(p => p.Position.X < -10 || p.Position.X > 850 || p.Position.Y < -10 || p.Position.Y > 650);
+
+            foreach (var enemy in enemies)
+                enemy.Update();
+
+            enemies.RemoveAll(e => e.Position.X < -100 || e.Position.X > 900 || e.Position.Y < -100 || e.Position.Y > 700);
+
+            while (particles.Count < 80)
             {
-                foreach (var part in enemy)
-                    part.Update();
-
-                // Удаление, если все частицы врага вышли за экран
-                bool outOfScreen = enemy.All(p =>
-                    p.Position.X < -50 || p.Position.X > 850 ||
-                    p.Position.Y < -50 || p.Position.Y > 650);
-
-                if (outOfScreen)
-                    enemies.Remove(enemy);
-            }
-
-            while (particles.Count < 100)
-            {
-                var size = rand.Next(4, 10);
+                float angle = (float)(rand.NextDouble() * 2 * Math.PI);
+                float speed = 0.3f + (float)rand.NextDouble() * 1.2f;
+                var velocity = new PointF((float)Math.Cos(angle) * speed, (float)Math.Sin(angle) * speed);
+                var size = rand.Next(6, 12);
                 var color = Color.FromArgb(
-                    rand.Next(150, 256),  // Alpha
-                    rand.Next(100, 200),  // R
-                    rand.Next(200, 256),  // G
-                    rand.Next(100, 200)   // B
+                    rand.Next(150, 256),
+                    rand.Next(100, 200),
+                    rand.Next(200, 256),
+                    rand.Next(100, 200)
                 );
+
                 particles.Add(new FoodParticle(
                     new PointF(rand.Next(800), rand.Next(600)),
+                    velocity,
                     color,
                     size
                 ));
             }
 
-            // Регенерация врагов
-            while (enemies.Count < 10)
+            while (enemies.Count < 5)
             {
                 float y = rand.Next(100, 500);
-                float size = rand.Next(30, 80);
+                float size = rand.Next(30, 150);
                 bool fromLeft = rand.Next(2) == 0;
                 float vx = fromLeft ? rand.Next(1, 3) : -rand.Next(1, 3);
-                float vy = rand.Next(-1, 2);
-                List<FishParticle> enemyFish = new List<FishParticle>();
-                for (int i = 0; i < 10; i++)
-                {
-                    var offset = new PointF(i * 5, (float)Math.Sin(i * 0.5f) * 5);
-                    var posX = fromLeft ? -size + offset.X : 800 + size - offset.X;
-                    var pos = new PointF(posX, y + offset.Y);
-                    var partSize = size / 10f * (1 - i * 0.03f);
-                    var color = Color.FromArgb(
-                        rand.Next(150, 256),
-                        Color.Red
-                    );
-
-                    enemyFish.Add(new FishParticle(
-                        pos,
-                        new PointF(vx, vy),
-                        color,
-                        partSize
-                    ));
-                }
-                enemies.Add(enemyFish);
+                var enemy = new Fish(
+                    new PointF(fromLeft ? -50 : 850, y),
+                    new PointF(vx, rand.Next(-1, 2)),
+                    Color.Red,
+                    size
+                );
+                enemies.Add(enemy);
             }
         }
 
@@ -95,10 +72,8 @@ namespace Fishicle
         {
             foreach (var p in particles)
                 p.Draw(g);
-
-            foreach (var enemy in enemies)
-                foreach (var part in enemy)
-                    part.Draw(g);
+            foreach (var e in enemies)
+                e.Draw(g);
         }
     }
 
