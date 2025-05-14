@@ -44,10 +44,20 @@ namespace Fishicle
                     enemies.Remove(enemy);
             }
 
-            // Регенерация еды
             while (particles.Count < 100)
             {
-                particles.Add(new FoodParticle(new PointF(rand.Next(800), rand.Next(600))));
+                var size = rand.Next(4, 10);
+                var color = Color.FromArgb(
+                    rand.Next(150, 256),  // Alpha
+                    rand.Next(100, 200),  // R
+                    rand.Next(200, 256),  // G
+                    rand.Next(100, 200)   // B
+                );
+                particles.Add(new FoodParticle(
+                    new PointF(rand.Next(800), rand.Next(600)),
+                    color,
+                    size
+                ));
             }
 
             // Регенерация врагов
@@ -58,22 +68,25 @@ namespace Fishicle
                 bool fromLeft = rand.Next(2) == 0;
                 float vx = fromLeft ? rand.Next(1, 3) : -rand.Next(1, 3);
                 float vy = rand.Next(-1, 2);
-
                 List<FishParticle> enemyFish = new List<FishParticle>();
                 for (int i = 0; i < 10; i++)
                 {
                     var offset = new PointF(i * 5, (float)Math.Sin(i * 0.5f) * 5);
                     var posX = fromLeft ? -size + offset.X : 800 + size - offset.X;
                     var pos = new PointF(posX, y + offset.Y);
+                    var partSize = size / 10f * (1 - i * 0.03f);
+                    var color = Color.FromArgb(
+                        rand.Next(150, 256),
+                        Color.Red
+                    );
 
                     enemyFish.Add(new FishParticle(
                         pos,
                         new PointF(vx, vy),
-                        Color.Red,
-                        size / 10f
+                        color,
+                        partSize
                     ));
                 }
-
                 enemies.Add(enemyFish);
             }
         }

@@ -12,31 +12,28 @@ namespace Fishicle
     {
         public PointF Position;
         public PointF Velocity;
-        public float Life;
-        public Color Color;
         public float Size;
+        public Color Color;
+        public float Life;
 
-        public Particle(PointF position, PointF velocity, float life, Color color, float size)
+        public Particle(PointF position, PointF velocity, Color color, float size, float life = 99999)
         {
             Position = position;
             Velocity = velocity;
-            Life = life;
             Color = color;
             Size = size;
+            Life = life;
         }
 
         public virtual void Update()
         {
             Position = new PointF(Position.X + Velocity.X, Position.Y + Velocity.Y);
-            Life -= 1;
+            Life -= 1f; // уменьшается очень медленно
         }
 
         public virtual void Draw(Graphics g)
         {
-            int alpha = (int)(255 * (Life / 100f));
-            alpha = Math.Max(0, Math.Min(255, alpha));
-
-            using (Brush b = new SolidBrush(Color.FromArgb(alpha, Color)))
+            using (Brush b = new SolidBrush(Color))
             {
                 g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
             }
@@ -45,26 +42,28 @@ namespace Fishicle
 
     public class FoodParticle : Particle
     {
-        private static Random rand = new Random();
-
-        public FoodParticle(PointF position)
-            : base(
-                position,
-                new PointF((float)(rand.NextDouble() * 2 - 1), (float)(rand.NextDouble() * 2 - 1)),
-                100,
-                Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256)),
-                5f
-            )
-        {
-        }
+        public FoodParticle(PointF position, Color color, float size)
+            : base(position, new PointF(0, 0), color, size, 99999) { }
     }
 
     public class FishParticle : Particle
     {
         public FishParticle(PointF position, PointF velocity, Color color, float size)
-            : base(position, velocity, 100, color, size)
+            : base(position, velocity, color, size, 99999) { }
+
+        public override void Update()
         {
+            base.Update();
+        }
+
+        public override void Draw(Graphics g)
+        {
+            using (Brush b = new SolidBrush(Color.FromArgb((int)Math.Min(255, (Life / 100f) * 255), Color)))
+            {
+                g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
+            }
         }
     }
-
 }
+
+
