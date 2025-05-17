@@ -60,6 +60,7 @@ namespace Fishicle
             playerFish.Velocity = new PointF(dir.X * 4, dir.Y * 4);
             playerFish.Update();
 
+
             // Поедание еды
             foreach (var food in emitter.particles.ToArray())
             {
@@ -90,11 +91,27 @@ namespace Fishicle
                 {
                     if (playerSize > enemySize)
                     {
+                        // Создаем "взрыв" кровавых частиц
+                        for (int i = 0; i < 20; i++)
+                        {
+                            float angle = (float)(rand.NextDouble() * Math.PI * 2);
+                            float speed = (float)(rand.NextDouble() * 4 + 1);
+                            var vel = new PointF((float)Math.Cos(angle) * speed, (float)Math.Sin(angle) * speed);
+
+                            emitter.temporaryParticles.Add(new FoodParticle(
+                                enemy.Position,
+                                vel,
+                                Color.FromArgb(200, Color.Red),
+                                10f,
+                                50f
+                            ));
+
+                        }
+
                         emitter.enemies.Remove(enemy);
-                        score += 30;
-                        playerSize += 6;
+                        score += 10;
+                        playerSize += 2;
                         playerFish.Size = playerSize;
-                        playerFish.CreateBody();
                     }
                     else
                     {
@@ -104,6 +121,8 @@ namespace Fishicle
                     }
                 }
             }
+
+
 
             if (score >= 1000)
             {

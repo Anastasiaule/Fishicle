@@ -40,37 +40,32 @@ namespace Fishicle
         }
     }
 
-    public class FoodParticle
+    public class FoodParticle : Particle
     {
-        public PointF Position;
-        public PointF Velocity;
-        public Color Color;
-        public float Size;
-
-        public FoodParticle(PointF position, PointF velocity, Color color, float size)
+        public FoodParticle(PointF position, PointF velocity, Color color, float size, float life = 99999f)
+            : base(position, velocity, color, size, life)
         {
-            Position = position;
-            Velocity = velocity;
-            Color = color;
-            Size = size;
         }
 
-        public void Update()
+        // Визуально можно переопределить, если нужно
+        public override void Draw(Graphics g)
         {
-            Position = new PointF(Position.X + Velocity.X, Position.Y + Velocity.Y);
-        }
+            int alpha = (int)(255 * (Life / 100f)); // если Life от 100 до 0
+            if (alpha < 0) alpha = 0;
+            if (alpha > 255) alpha = 255;
 
-        public void Draw(Graphics g)
-        {
-            using (Brush b = new SolidBrush(Color))
+            Color fadedColor = Color.FromArgb(alpha, Color.R, Color.G, Color.B);
+
+            using (Brush b = new SolidBrush(fadedColor))
             {
                 g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
             }
         }
+
     }
 
 
-public class FishParticle 
+    public class FishParticle 
     {
         public PointF Position;
         public PointF Velocity;
@@ -78,8 +73,9 @@ public class FishParticle
         public float Size;
         public PointF RelativePosition;
         public float Angle;
+        public PointF Offset;
 
-        public object Offset { get; internal set; }
+      
 
         public FishParticle(PointF position, PointF velocity, Color color, float size, PointF relative = default)
         {
@@ -88,6 +84,7 @@ public class FishParticle
             Color = color;
             Size = size;
             RelativePosition = relative;
+
         }
 
         public void UpdatePosition(PointF basePos, float angle)
@@ -105,9 +102,16 @@ public class FishParticle
 
         public void Draw(Graphics g)
         {
-            using (Brush b = new SolidBrush(Color))
+            int alpha = 160; // постоянная полупрозрачность
+
+            var color = Color.FromArgb(alpha, Color);
+            using (var b = new SolidBrush(color))
             {
-                g.FillEllipse(b, Position.X - Size / 2, Position.Y - Size / 2, Size, Size);
+                g.FillEllipse(b,
+                    Position.X + Offset.X - Size / 2,
+                    Position.Y + Offset.Y - Size / 2,
+                    Size,
+                    Size);
             }
         }
     }

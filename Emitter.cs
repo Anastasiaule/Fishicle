@@ -13,6 +13,7 @@ namespace Fishicle
         public List<Fish> enemies = new List<Fish>();
         public PointF EmitPosition;
         private Random rand = new Random();
+        public List<FoodParticle> temporaryParticles = new List<FoodParticle>();
 
         public Emitter(PointF pos)
         {
@@ -52,6 +53,18 @@ namespace Fishicle
                 ));
             }
 
+            foreach (var p in temporaryParticles.ToArray())
+            {
+                p.Life -= 1;
+                p.Position = new PointF(
+                    p.Position.X + p.Velocity.X,
+                    p.Position.Y + p.Velocity.Y
+                );
+
+                if (p.Life <= 0)
+                    temporaryParticles.Remove(p);
+            }
+
             while (enemies.Count < 5)
             {
                 float y = rand.Next(100, 500);
@@ -61,7 +74,12 @@ namespace Fishicle
                 var enemy = new Fish(
                     new PointF(fromLeft ? -50 : 850, y),
                     new PointF(vx, rand.Next(-1, 2)),
-                    Color.Red,
+                    Color.FromArgb(
+                            255,
+                            rand.Next(10, 80),
+                            rand.Next(10, 80),
+                            rand.Next(10, 120)
+                        ),
                     size
                 );
                 enemies.Add(enemy);
@@ -72,6 +90,9 @@ namespace Fishicle
         {
             foreach (var p in particles)
                 p.Draw(g);
+            foreach (var p in temporaryParticles)
+                p.Draw(g);
+
             foreach (var e in enemies)
                 e.Draw(g);
         }
